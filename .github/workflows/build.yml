@@ -1,0 +1,52 @@
+name: Build SATySFi documents
+
+on:
+  - push
+
+jobs:
+
+  list:
+    runs-on: ubuntu-latest
+    outputs:
+      sources: ${{ steps.list.outputs.sources }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List source files
+        id: list
+        run: |
+          find . -type f -name "*.saty" | awk 'BEGIN { printf "sources=[" } { printf "\"" $1 "\"," } END { printf "]" }' >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: list
+    if: ${{ needs.list.outputs.sources != '' && toJson(fromJson(needs.list.outputs.sources)) != '[]' }}
+    strategy:
+      matrix:
+        source: ${{ fromJson(needs.list.outputs.sources) }}
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+    container:
+      image: kyori/satysfi:latest
+      options: --user root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build SATySFi document
+        run: |
+          chown -R opam:opam $PWD
+          sudo -iu opam sh -c "cd $PWD && ./.devcontainer/on-create.sh && satyrographos install && satysfi ${{ matrix.source }}"
+
+      - name: Get output file name
+        id: output
+        run: |
+          echo "name=$(echo ${{ matrix.source }} | sed -re 's/(^\.\/|\.saty$)//g' -e 's/\//_/g')" >> "$GITHUB_OUTPUT"
+          echo "path=$(echo ${{ matrix.source }} | sed -e 's/\.saty$/.pdf/')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload PDF
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.output.outputs.name }}
+          path: ${{ steps.output.outputs.path }}

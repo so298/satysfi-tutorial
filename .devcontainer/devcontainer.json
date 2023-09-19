@@ -1,0 +1,23 @@
+{
+  "name": "Write with SATySFi",
+
+  "image": "ghcr.io/kyori19/devcontainers/images/satysfi-base",
+  "onCreateCommand": ".devcontainer/on-create.sh",
+
+  "postCreateCommand": "satyrographos install",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "pickoba.satysfi-workshop",
+        "tomoki1207.pdf"
+      ],
+      "settings": {
+        "satysfi-workshop.languageServer.enabled": true,
+        "[satysfi]": {
+          "editor.snippetSuggestions": "none"
+        }
+      }
+    }
+  }
+}
